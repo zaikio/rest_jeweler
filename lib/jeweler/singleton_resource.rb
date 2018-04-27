@@ -1,7 +1,7 @@
-module RestJeweler
+module Jeweler
   module SingletonResource
     extend ActiveSupport::Concern
-    include RestJeweler::Resource
+    include Jeweler::Resource
 
     def path
       Array.new.tap do |segments|

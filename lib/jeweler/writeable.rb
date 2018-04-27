@@ -1,4 +1,4 @@
-module RestJeweler
+module Jeweler
   module Writeable
     module Collection
       def create(attributes = {})
@@ -8,7 +8,7 @@ module RestJeweler
       end
 
       def build(attributes = {})
-        @resource_klass.new(attributes, @owner).tap do |new_object|
+        @resource_klass.new(@client, attributes, @owner).tap do |new_object|
           self.objects << new_object
         end
       end
@@ -34,13 +34,13 @@ module RestJeweler
       end
 
       def save
-        raise Keyline::Errors::ParentNotPersistedError, 'you can\'t save a child object unless its parent has been saved' if self.parent && !self.parent.persisted?
+        raise Jeweler::Errors::ParentNotPersistedError, 'you can\'t save a child object unless its parent has been saved' if self.parent && !self.parent.persisted?
         self.persisted? ? self.update : self.create
       end
 
       def create
         perform_request do
-          self.attributes = Keyline.client.perform_request(:post, self.path_for_create, payload: attributes_for_write)
+          self.attributes = @client.perform_request(:post, self.path_for_create, payload: attributes_for_write)
         end
       end
 
@@ -49,13 +49,13 @@ module RestJeweler
 
         perform_request do
           # PATCH requests usually return 204 No Content, so don't assign the response to attributes
-          Keyline.client.perform_request(:patch, self.path_for_update, payload: attributes_for_write)
+          @client.perform_request(:patch, self.path_for_update, payload: attributes_for_write)
         end
       end
 
       def destroy
         perform_request do
-          Keyline.client.perform_request(:delete, self.path_for_destroy)
+          @client.perform_request(:delete, self.path_for_destroy)
           attributes['id'] = nil
         end
       end
@@ -90,10 +90,10 @@ module RestJeweler
         clear_errors
         return true
 
-      rescue RestJeweler::Errors::BadRequestError => e
+      rescue Jeweler::Errors::BadRequestError => e
         @errors = e.missing_parameters.nil? ? e.raw_payload : e.missing_parameters
         return false
-      rescue RestJeweler::Errors::ResourceInvalidError => e
+      rescue Jeweler::Errors::ResourceInvalidError => e
         @errors = e.validation_errors
         return false
       end
@@ -105,9 +105,15 @@ module RestJeweler
       def attributes_for_write
         # Consider all attribute= functions as writable
         # attributes that need to be send over the wire
-        {
-          self.name_in_params => self.writeable_attributes
-        }
+        case @client.interface_style
+        when :json_api
+          self.writeable_attributes
+          
+        when :rails
+          {
+            self.name_in_params => self.writeable_attributes
+          }
+        end
       end
     end
   end

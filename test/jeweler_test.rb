@@ -1,8 +1,8 @@
 require "test_helper"
 
-class RestJewelerTest < Minitest::Test
+class JewelerTest < Minitest::Test
   def test_that_it_has_a_version_number
-    refute_nil ::RestJeweler::VERSION
+    refute_nil ::Jeweler::VERSION
   end
 
   def test_it_does_something_useful

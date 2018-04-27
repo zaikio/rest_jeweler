@@ -1,4 +1,4 @@
-module RestJeweler
+module Jeweler
   module Resource
     extend ActiveSupport::Concern
     attr_accessor :attributes, :parent
@@ -10,15 +10,15 @@ module RestJeweler
     module ClassMethods
       cattr_reader :associations
 
-      def from_hash(data, parent = nil)
+      def from_hash(client, data, parent = nil)
         associations = self.instance_variable_get(:@associations)
-        resource = self.new(data.except(associations), parent)
+        resource = self.new(client, data.except(associations), parent)
 
         data.slice(*associations).each do |association, objects|
-          klass = "RestJeweler::#{association.classify}".constantize
+          klass = association.classify.constantize
 
           resource.instance_variable_get(:@children)[association] = Collection.new(
-            -> { Keyline.client.perform_request(:get, klass.path_for_index(self)) },
+            -> { @client.perform_request(:get, klass.path_for_index(self)) },
             klass, resource, objects)
         end
 
@@ -38,16 +38,16 @@ module RestJeweler
 
         @associations.each do |association|
           define_method association do
-            klass = "RestJeweler::#{association.classify}".constantize
+            klass = association.classify.constantize
 
             # Singleton resources will have different accessors than
             # collection resources, since they return the resource
             # right away, whereas collection resources return a collection
             # proxy object with lazy loading
             @children[association.to_s] ||= if klass.singleton?
-              klass.new(Keyline.client.perform_request(:get, klass.path_for_show(self)), self)
+              klass.new(@client.perform_request(:get, klass.path_for_show(self)), self)
             else
-              Collection.new(-> { Keyline.client.perform_request(:get, klass.path_for_index(self)) }, klass, self)
+              Collection.new(@client, -> { @client.perform_request(:get, klass.path_for_index(self)) }, klass, self)
             end
           end
         end
@@ -62,23 +62,24 @@ module RestJeweler
       end
 
       def path_for_index(parent = nil)
-        self.new({}, parent).path_for_index
+        self.new(nil, {}, parent).path_for_index
       end
 
       def path_for_show(parent = nil)
-        self.new({}, parent).path_for_show
+        self.new(nil, {}, parent).path_for_show
       end
 
       def path(parent = nil)
-        self.new({}, parent).path
+        self.new(nil, {}, parent).path
       end
 
       def singleton?
-        self.included_modules.include?(RestJeweler::SingletonResource)
+        self.included_modules.include?(Jeweler::SingletonResource)
       end
     end
 
-    def initialize(attributes = {}, parent = nil)
+    def initialize(client, attributes = {}, parent = nil)
+      @client = client
       @attributes = attributes.stringify_keys!
       @parent = parent
       @children = {}

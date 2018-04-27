@@ -1,10 +1,11 @@
-module RestJeweler
+module Jeweler
   class Collection
     include Enumerable
     include Finders
     include Writeable::Collection
 
-    def initialize(retrieval_proc, resource_klass, owner = nil, prefetched_objects = nil)
+    def initialize(client, retrieval_proc, resource_klass, owner = nil, prefetched_objects = nil)
+      @client             = client
       @retrieval_proc     = retrieval_proc
       @resource_klass     = resource_klass
       @owner              = owner
@@ -14,7 +15,8 @@ module RestJeweler
 
     def find(id)
       @resource_klass.from_hash(
-        Keyline.client.perform_request(:get, "#{@resource_klass.path_for_show(@owner)}/#{id}"),
+        @client,
+        @client.perform_request(:get, "#{@resource_klass.path_for_show(@owner)}/#{id}"),
         @owner)
     end
 
@@ -32,7 +34,7 @@ module RestJeweler
       end
 
       @retrieved = true
-      @objects = data.collect { |o| @resource_klass.from_hash(o, @owner) }
+      @objects = data.collect { |o| @resource_klass.from_hash(@client, o, @owner) }
 
       return @objects
     end

@@ -1,4 +1,4 @@
-module RestJeweler
+module Jeweler
   module Finders
     def where(attributes)
       matching_objects = objects
@@ -8,7 +8,7 @@ module RestJeweler
           begin
             obj.send(attribute) == value
           rescue NoMethodError
-            raise RestJeweler::Errors::UnknownAttributeError,
+            raise Jeweler::Errors::UnknownAttributeError,
               "Attribute #{attribute} is not defined for #{obj.class}"
           end
         end
@@ -25,7 +25,7 @@ module RestJeweler
       if object = find_by(id: id)
         return object
       else
-        raise RestJeweler::Errors::RecordNotFound, "#{self.to_s} with ID #{id}"
+        raise Jeweler::Errors::RecordNotFound, "#{self.to_s} with ID #{id}"
       end
     end
   end

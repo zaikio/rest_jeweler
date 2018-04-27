@@ -1,4 +1,4 @@
-module RestJeweler
+module Jeweler
   class Error < Exception
     attr_reader :raw_payload
 
