@@ -108,7 +108,7 @@ module Jeweler
         case @client.interface_style
         when :json_api
           self.writeable_attributes
-          
+
         when :rails
           {
             self.name_in_params => self.writeable_attributes

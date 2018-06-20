@@ -7,7 +7,7 @@ module Jeweler
     end
 
     def to_s
-      "#{super} - #{@raw_payload}"
+      "#{@raw_payload}"
     end
   end
 
@@ -46,6 +46,12 @@ module Jeweler
     end
 
     class ResourceReadOnlyError < Error
+    end
+
+    class UnauthorizedError < Error
+    end
+
+    class OtherTransportError < Error
     end
   end
 end
