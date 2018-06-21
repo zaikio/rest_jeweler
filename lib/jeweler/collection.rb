@@ -34,7 +34,7 @@ module Jeweler
       end
 
       @retrieved = true
-      @objects = data&.collect { |o| @resource_klass.from_hash(@client, o, @owner) } || []
+      @objects   = (data || []).collect { |o| @resource_klass.from_hash(@client, o, @owner) }
 
       return @objects
     end

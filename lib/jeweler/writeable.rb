@@ -21,6 +21,7 @@ module Jeweler
         extend Writeable::Resource::ClassMethods
       end
 
+      attr_accessor :adhoc_writable_attributes
       attr_reader :errors
 
       module ClassMethods
@@ -77,7 +78,7 @@ module Jeweler
       end
 
       def writeable_attributes
-        @attributes.slice(*self.class.instance_methods.grep(/[a-z]+=/).collect { |a| a.to_s[0..-2] })
+        @attributes.slice(*self.class.instance_methods.grep(/[a-z]+=/).collect { |a| a.to_s[0..-2] }).merge(@adhoc_writable_attributes)
       end
 
       def name_in_params

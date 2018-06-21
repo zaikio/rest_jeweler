@@ -81,6 +81,7 @@ module Jeweler
     def initialize(client, attributes = {}, parent = nil)
       @client = client
       @attributes = attributes.stringify_keys!
+      @adhoc_writable_attributes = {}
       @parent = parent
       @children = {}
       @errors = []
