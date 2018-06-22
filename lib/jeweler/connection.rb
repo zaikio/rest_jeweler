@@ -24,7 +24,7 @@ module Jeweler
         when 400 then raise Jeweler::Errors::BadRequestError.new(JSON.parse(response.body))
         when 401 then raise Jeweler::Errors::UnauthorizedError.new(response.body)
         when 403 then raise Jeweler::Errors::ForbiddenError.new('')
-        when 404 then raise Jeweler::Errors::ResourceNotFoundError.new(url.to_s)
+        when 404 then raise Jeweler::Errors::ResourceNotFoundError.new("#{method}: #{url}")
         when 422 then raise Jeweler::Errors::ResourceInvalidError.new(JSON.parse(response.body))
         when 500..599
           raise Jeweler::Errors::RemoteServerError.new("Requesting: #{response.instance_variable_get(:@url).to_s}, received: #{response.body}")

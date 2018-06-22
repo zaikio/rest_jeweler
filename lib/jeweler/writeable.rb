@@ -49,8 +49,8 @@ module Jeweler
         self.attributes = attributes
 
         perform_request do
-          # PATCH requests usually return 204 No Content, so don't assign the response to attributes
-          @client.perform_request(:patch, self.path_for_update, payload: attributes_for_write)
+          # PUT requests usually return 204 No Content, so don't assign the response to attributes
+          @client.perform_request(:put, self.path_for_update, payload: attributes_for_write)
         end
       end
 
