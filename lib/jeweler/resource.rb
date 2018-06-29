@@ -1,10 +1,12 @@
 module Jeweler
   module Resource
     extend ActiveSupport::Concern
+
     attr_accessor :attributes, :parent
 
     included do
       extend Resource::ClassMethods
+      extend Jeweler::Util
     end
 
     module ClassMethods
@@ -15,11 +17,18 @@ module Jeweler
         resource = self.new(client, data.except(associations), parent)
 
         data.slice(*associations).each do |association, objects|
-          klass = association.classify.constantize
+          klass = const_in_current_namespace(association)
 
-          resource.instance_variable_get(:@children)[association] = Collection.new(
-            -> { @client.perform_request(:get, klass.path_for_index(self)) },
-            klass, resource, objects)
+          resource.instance_variable_get(:@children)[association] = if klass.singleton?
+            klass.new(client, objects, resource)
+          else
+            Collection.new(
+              client,
+              -> { @client.perform_request(:get, klass.path_for_index(self)) },
+              klass,
+              resource,
+              objects)
+          end
         end
 
         return resource
@@ -38,14 +47,14 @@ module Jeweler
 
         @associations.each do |association|
           define_method association do
-            klass = association.classify.constantize
+            klass = self.class.const_in_current_namespace(association)
 
             # Singleton resources will have different accessors than
             # collection resources, since they return the resource
             # right away, whereas collection resources return a collection
             # proxy object with lazy loading
             @children[association.to_s] ||= if klass.singleton?
-              klass.new(@client.perform_request(:get, klass.path_for_show(self)), self)
+              klass.new(@client, @client.perform_request(:get, klass.path_for_show(self)), self)
             else
               Collection.new(@client, -> { @client.perform_request(:get, klass.path_for_index(self)) }, klass, self)
             end

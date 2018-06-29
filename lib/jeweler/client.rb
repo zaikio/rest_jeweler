@@ -6,6 +6,7 @@ require 'jeweler/finders'
 require 'jeweler/collection'
 require 'jeweler/errors'
 require 'jeweler/json_api'
+require 'jeweler/util'
 
 module Jeweler
   module Client
@@ -14,6 +15,7 @@ module Jeweler
 
     included do
       extend Client::ClassMethods
+      extend Jeweler::Util
     end
 
     module ClassMethods
@@ -26,11 +28,7 @@ module Jeweler
               return instance_variable_get(:"@#{collection}")
 
             else
-              resource_klass = if self.class.to_s.deconstantize.present?
-                "#{self.class.to_s.deconstantize}::#{collection.to_s.classify}".constantize
-              else
-                collection.to_s.classify.constantize
-              end
+              resource_klass = self.class.const_in_current_namespace(collection.to_s)
 
               instance_variable_set(:"@#{collection}",
                 Jeweler::Collection.new(self, -> { self.perform_request(:get, resource_klass.path_for_index) }, resource_klass)

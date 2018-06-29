@@ -107,13 +107,8 @@ module Jeweler
         # Consider all attribute= functions as writable
         # attributes that need to be send over the wire
         case @client.interface_style
-        when :json_api
-          self.writeable_attributes
-
-        when :rails
-          {
-            self.name_in_params => self.writeable_attributes
-          }
+        when :json_api then self.writeable_attributes
+        when :rails    then JSON.generate({ self.name_in_params => self.writeable_attributes })
         end
       end
     end
