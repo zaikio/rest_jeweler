@@ -55,7 +55,7 @@ module Jeweler
             # proxy object with lazy loading
             @children[association.to_s] ||= if klass.singleton?
               begin
-                klass.new(@client.perform_request(:get, klass.path_for_show(self)), self)
+                klass.new(@client, @client.perform_request(:get, klass.path_for_show(self)), self)
               rescue Errors::ResourceNotFoundError
                 nil
               end
