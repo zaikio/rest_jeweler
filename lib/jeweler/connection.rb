@@ -2,12 +2,13 @@ require 'faraday'
 
 module Jeweler
   module Connection
-    attr_reader :token, :host, :base_uri
+    attr_reader :token, :host, :base_uri, :timeout
 
     def initialize(options = {})
       @host     = options[:host]
       @base_uri = options[:base_uri] || '/api/v1/'
       @token    = options[:token]
+      @timeout  = options[:timeout] || 5
     end
 
     def perform_request(method, url, options = {})
@@ -42,6 +43,7 @@ private
 
       return connection.send(method) do |request|
         set_headers(request)
+        request.options.timeout = @timeout
         request.url(request_url)
         request.body = options[:payload] if options.has_key?(:payload)
       end
