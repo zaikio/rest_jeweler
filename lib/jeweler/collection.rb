@@ -10,7 +10,7 @@ module Jeweler
       @resource_klass     = resource_klass
       @owner              = owner
       @prefetched_objects = prefetched_objects
-      @retrieved          = false
+      @retrieved          = prefetched_objects.present?
     end
 
     def find(id)
@@ -21,20 +21,23 @@ module Jeweler
     end
 
     def objects
-      return @objects if @retrieved
+      if @retrieved
+        if @objects
+          return @objects
 
-      data = if @owner && !@owner.persisted?
-        @objects = []
-
-      elsif @prefetched_objects
-        @objects = @prefetched_objects
+        elsif @prefetched_objects
+          return @objects = @prefetched_objects
+        end
 
       else
-        @retrieval_proc.call
+        if @owner && !@owner.persisted?
+          @objects = []
+        else
+          data = @retrieval_proc.call
+          @retrieved = true
+          @objects = (data || []).collect { |o| @resource_klass.from_hash(@client, o, @owner) }
+        end
       end
-
-      @retrieved = true
-      @objects   = (data || []).collect { |o| @resource_klass.from_hash(@client, o, @owner) }
 
       return @objects
     end

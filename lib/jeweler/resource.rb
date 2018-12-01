@@ -15,9 +15,12 @@ module Jeweler
       def from_hash(client, data, parent = nil)
         associations = self.instance_variable_get(:@associations)
         singleton_associations = self.instance_variable_get(:@singleton_associations)
-        resource = self.new(client, data.except(associations), parent)
 
-        data.slice(*associations).each do |association, objects|
+        resource = self.new(client,
+          data.except(*associations).except(*singleton_associations),
+          parent)
+
+        data.slice(*associations).each do |association, object_attributes|
           klass = const_in_current_namespace(association)
 
           resource.instance_variable_get(:@children)[association] = Collection.new(
@@ -25,7 +28,7 @@ module Jeweler
             -> { @client.perform_request(:get, klass.path_for_index(self)) },
             klass,
             resource,
-            objects
+            object_attributes.collect { |oa| klass.from_hash(client, oa, resource) }
           )
         end
 
@@ -33,7 +36,7 @@ module Jeweler
           next unless attributes
           klass = const_in_current_namespace(association)
 
-          singleton = klass.new(client, attributes, resource)
+          singleton = klass.from_hash(client, attributes, resource)
           singleton.extend(Jeweler::SingletonResource)
           resource.instance_variable_get(:@children)[association] = singleton
         end
@@ -55,7 +58,7 @@ module Jeweler
         @associations.each do |association|
           define_method association do
             klass = self.class.const_in_current_namespace(association)
-            Collection.new(@client, -> { @client.perform_request(:get, klass.path_for_index(self)) }, klass, self)
+            @children[association] ||= Collection.new(@client, -> { @client.perform_request(:get, klass.path_for_index(self)) }, klass, self)
           end
         end
       end
@@ -144,6 +147,10 @@ module Jeweler
     # Only writable resources can be invalid
     def valid?
       true
+    end
+
+    def inspect
+      "##{self.class.to_s}:#{self.object_id}: #{self.id}"
     end
   end
 end
