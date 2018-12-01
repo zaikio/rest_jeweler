@@ -10,25 +10,32 @@ module Jeweler
     end
 
     module ClassMethods
-      cattr_reader :associations
+      cattr_reader :associations, :singleton_associations
 
       def from_hash(client, data, parent = nil)
         associations = self.instance_variable_get(:@associations)
+        singleton_associations = self.instance_variable_get(:@singleton_associations)
         resource = self.new(client, data.except(associations), parent)
 
         data.slice(*associations).each do |association, objects|
           klass = const_in_current_namespace(association)
 
-          resource.instance_variable_get(:@children)[association] = if klass.singleton?
-            klass.new(client, objects, resource)
-          else
-            Collection.new(
-              client,
-              -> { @client.perform_request(:get, klass.path_for_index(self)) },
-              klass,
-              resource,
-              objects)
-          end
+          resource.instance_variable_get(:@children)[association] = Collection.new(
+            client,
+            -> { @client.perform_request(:get, klass.path_for_index(self)) },
+            klass,
+            resource,
+            objects
+          )
+        end
+
+        data.slice(*singleton_associations).each do |association, attributes|
+          next unless attributes
+          klass = const_in_current_namespace(association)
+
+          singleton = klass.new(client, attributes, resource)
+          singleton.extend(Jeweler::SingletonResource)
+          resource.instance_variable_get(:@children)[association] = singleton
         end
 
         return resource
@@ -48,19 +55,31 @@ module Jeweler
         @associations.each do |association|
           define_method association do
             klass = self.class.const_in_current_namespace(association)
+            Collection.new(@client, -> { @client.perform_request(:get, klass.path_for_index(self)) }, klass, self)
+          end
+        end
+      end
 
-            # Singleton resources will have different accessors than
-            # collection resources, since they return the resource
-            # right away, whereas collection resources return a collection
-            # proxy object with lazy loading
-            @children[association.to_s] ||= if klass.singleton?
-              begin
-                klass.new(@client, @client.perform_request(:get, klass.path_for_show(self)), self)
-              rescue Errors::ResourceNotFoundError
-                nil
-              end
-            else
-              Collection.new(@client, -> { @client.perform_request(:get, klass.path_for_index(self)) }, klass, self)
+      # Singleton resources will have different accessors than
+      # collection resources, since they return the resource
+      # right away, whereas collection resources return a collection
+      # proxy object with lazy loading
+      def singleton_associations(*associations)
+        @singleton_associations = associations.collect(&:to_s)
+
+        @singleton_associations.each do |association|
+          define_method association do
+            @children[association.to_s] ||=
+            begin
+              prototype = klass.new(@client, {}, self)
+              prototype.extend(Jeweler::SingletonResource)
+
+              object = klass.new(@client, @client.perform_request(:get, prototype.path_for_show, self))
+              object.extend(Jeweler::SingletonResource)
+              object
+
+            rescue Errors::ResourceNotFoundError
+              nil
             end
           end
         end
@@ -84,10 +103,6 @@ module Jeweler
 
       def path(parent = nil)
         self.new(nil, {}, parent).path
-      end
-
-      def singleton?
-        self.included_modules.include?(Jeweler::SingletonResource)
       end
     end
 
