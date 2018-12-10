@@ -74,6 +74,8 @@ module Jeweler
           define_method association do
             @children[association.to_s] ||=
             begin
+              klass = self.class.const_in_current_namespace(association)
+              
               prototype = klass.new(@client, {}, self)
               prototype.extend(Jeweler::SingletonResource)
 
