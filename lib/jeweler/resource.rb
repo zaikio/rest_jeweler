@@ -75,11 +75,11 @@ module Jeweler
             @children[association.to_s] ||=
             begin
               klass = self.class.const_in_current_namespace(association)
-              
+
               prototype = klass.new(@client, {}, self)
               prototype.extend(Jeweler::SingletonResource)
 
-              object = klass.new(@client, @client.perform_request(:get, prototype.path_for_show, self))
+              object = klass.new(@client, @client.perform_request(:get, prototype.path_for_show), self)
               object.extend(Jeweler::SingletonResource)
               object
 
