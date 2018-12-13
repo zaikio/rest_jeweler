@@ -5,12 +5,12 @@ module Jeweler
     attr_accessor :attributes, :parent
 
     included do
-      extend Resource::ClassMethods
       extend Jeweler::Util
     end
 
-    module ClassMethods
-      cattr_reader :associations, :singleton_associations
+    class_methods do
+      cattr_reader :associations, :singleton_associations, :name_in_path,
+        :name_in_params, :prefix, :prefix_overwrites_parent
 
       def from_hash(client, data, parent = nil)
         associations = self.instance_variable_get(:@associations)
@@ -25,7 +25,7 @@ module Jeweler
 
           resource.instance_variable_get(:@children)[association] = Collection.new(
             client,
-            -> { @client.perform_request(:get, klass.path_for_index(self)) },
+            -> { @client.perform_request(:get, klass.path_for_index(resource)) },
             klass,
             resource,
             object_attributes.collect { |oa| klass.from_hash(client, oa, resource) }
@@ -90,12 +90,17 @@ module Jeweler
         end
       end
 
-      def path_prefix(prefix = nil)
-        if prefix
-          @prefix = prefix.to_s
-        else
-          @prefix
-        end
+      def name_in_path(name)
+        @name_in_path = name
+      end
+
+      def name_in_params(name)
+        @name_in_params = name
+      end
+
+      def path_prefix(prefix, options = {})
+        @prefix = prefix
+        @prefix_overwrites_parent = options.has_key?(:overwrite_parent_path) ? options[:overwrite_parent_path] : true
       end
 
       def path_for_index(parent = nil)
@@ -122,15 +127,29 @@ module Jeweler
 
     def path
       Array.new.tap do |segments|
-        segments << @parent.path if @parent && !self.class.path_prefix
-        segments << self.class.path_prefix if self.class.path_prefix
+        prefix = self.class.instance_variable_get(:@prefix)
+        prefix_overwrites_parent = self.class.instance_variable_get(:@prefix_overwrites_parent)
+
+        if prefix
+          if prefix_overwrites_parent
+            segments << prefix
+          elsif @parent.present?
+            segments << @parent.path
+          else
+            segments << prefix
+          end
+
+        elsif @parent.present?
+          segments << @parent.path
+        end
+
         segments << self.name_in_path
         segments << self.id if self.persisted?
       end.join('/')
     end
 
     def name_in_path
-      self.class.to_s.demodulize.underscore.pluralize
+      self.class.instance_variable_get(:@name_in_path) || self.class.to_s.demodulize.underscore.pluralize
     end
 
     # Provides a possiblity for the given resource
@@ -149,6 +168,10 @@ module Jeweler
     # Only writable resources can be invalid
     def valid?
       true
+    end
+
+    def reload!
+      self.class.from_hash(@client, @client.perform_request(:get, self.path_for_show), @parent)
     end
 
     def inspect

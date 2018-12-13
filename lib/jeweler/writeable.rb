@@ -82,7 +82,7 @@ module Jeweler
       end
 
       def name_in_params
-        self.class.to_s.demodulize.underscore
+        self.class.instance_variable_get(:@name_in_params) || self.class.to_s.demodulize.underscore
       end
 
     private
