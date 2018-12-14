@@ -10,7 +10,7 @@ module Jeweler
       @resource_klass     = resource_klass
       @owner              = owner
       @prefetched_objects = prefetched_objects
-      @retrieved          = prefetched_objects.present?
+      @retrieved          = prefetched_objects.is_a?(Array)
     end
 
     def find(id)
