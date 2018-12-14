@@ -25,7 +25,7 @@ module Jeweler
 
           resource.instance_variable_get(:@children)[association] = Collection.new(
             client,
-            -> { @client.perform_request(:get, klass.path_for_index(resource)) },
+            -> { client.perform_request(:get, klass.path_for_index(resource)) },
             klass,
             resource,
             object_attributes.collect { |oa| klass.from_hash(client, oa, resource) }
