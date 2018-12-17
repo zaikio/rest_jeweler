@@ -87,6 +87,21 @@ module Jeweler
               nil
             end
           end
+
+          define_method "build_#{association}" do |attributes = {}|
+            klass = self.class.const_in_current_namespace(association)
+            object = klass.new(@client, attributes, self)
+            object.extend(Jeweler::SingletonResource)
+
+            instance_variable_get(:@children)[association.to_s] = object
+          end
+
+          define_method "create_#{association}" do |attributes = {}|
+            object = self.send("build_#{association}", attributes)
+            object.save
+
+            return object
+          end
         end
       end
 

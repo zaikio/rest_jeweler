@@ -84,7 +84,7 @@ module Jeweler
       def name_in_params
         self.class.instance_variable_get(:@name_in_params) || self.class.to_s.demodulize.underscore
       end
-
+      
     private
       def perform_request(&block)
         block.call
