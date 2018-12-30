@@ -17,7 +17,8 @@ module Jeweler
       end
 
       if response.success?
-        file = Tempfile.new(encoding: 'utf-8')
+        file = Tempfile.new
+        file.binmode
         file.write response.body
         file.rewind
 
