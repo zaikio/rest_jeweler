@@ -1,5 +1,6 @@
 require 'jeweler/connection'
 require 'jeweler/writeable'
+require 'jeweler/document'
 require 'jeweler/resource'
 require 'jeweler/singleton_resource'
 require 'jeweler/finders'

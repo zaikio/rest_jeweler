@@ -21,18 +21,7 @@ module Jeweler
           true
         end
       else
-        case response.status
-        when 400 then raise Jeweler::Errors::BadRequestError.new(JSON.parse(response.body))
-        when 401 then raise Jeweler::Errors::UnauthorizedError.new(response.body)
-        when 403 then raise Jeweler::Errors::ForbiddenError.new('')
-        when 404 then raise Jeweler::Errors::ResourceNotFoundError.new("#{method}: #{url}")
-        when 422 then raise Jeweler::Errors::ResourceInvalidError.new(JSON.parse(response.body))
-        when 500..599
-          raise Jeweler::Errors::RemoteServerError.new("Requesting: #{response.instance_variable_get(:@url).to_s}, received: #{response.body}")
-
-        else
-          raise Jeweler::Errors::OtherTransportError.new(response.body)
-        end
+        raise_errors(response, method, url)
       end
     end
 
@@ -59,6 +48,21 @@ private
       request.headers['Content-Type']  = 'application/json'
       request.headers['Accept']        = 'application/json'
       request.headers['Authorization'] = "Bearer #{@token}"
+    end
+
+    def raise_errors(response, method, url)
+      case response.status
+      when 400 then raise Jeweler::Errors::BadRequestError.new(JSON.parse(response.body))
+      when 401 then raise Jeweler::Errors::UnauthorizedError.new(response.body)
+      when 403 then raise Jeweler::Errors::ForbiddenError.new('')
+      when 404 then raise Jeweler::Errors::ResourceNotFoundError.new("#{method}: #{url}")
+      when 422 then raise Jeweler::Errors::ResourceInvalidError.new(JSON.parse(response.body))
+      when 500..599
+        raise Jeweler::Errors::RemoteServerError.new("Requesting: #{response.instance_variable_get(:@url).to_s}, received: #{response.body}")
+
+      else
+        raise Jeweler::Errors::OtherTransportError.new(response.body)
+      end
     end
   end
 end
