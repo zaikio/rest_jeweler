@@ -14,10 +14,14 @@ module Jeweler
     end
 
     def find(id)
-      @resource_klass.from_hash(
-        @client,
-        @client.perform_request(:get, "#{@resource_klass.path_for_show(@owner)}/#{id}"),
-        @owner)
+      unless id
+        raise Jeweler::Errors::ResourceNotFoundError.new("unable to get #{@resource_klass} without ID")
+      else
+        @resource_klass.from_hash(
+          @client,
+          @client.perform_request(:get, "#{@resource_klass.path_for_show(@owner)}/#{id}"),
+          @owner)
+      end
     end
 
     def objects
