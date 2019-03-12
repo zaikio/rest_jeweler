@@ -7,6 +7,12 @@ module Jeweler
         end
       end
 
+      def create!(attributes = {})
+        self.build(attributes).tap do |object|
+          object.save!
+        end
+      end
+
       def build(attributes = {})
         @resource_klass.new(@client, attributes, @owner).tap do |new_object|
           self.objects << new_object
@@ -54,6 +60,23 @@ module Jeweler
         end
       end
 
+      def save!
+        raise Jeweler::Errors::ParentNotPersistedError, 'you can\'t save a child object unless its parent has been saved' if self.parent && !self.parent.persisted?
+        self.persisted? ? self.update! : self.create!
+      end
+
+      def create!
+        unless self.create
+          raise Jeweler::Errors::ResourceInvalidError, @errors.inspect
+        end
+      end
+
+      def update!(attributes = {})
+        unless self.update(attributes)
+          raise Jeweler::Errors::ResourceInvalidError, @errors.inspect
+        end
+      end
+
       def destroy
         perform_request do
           @client.perform_request(:delete, self.path_for_destroy)
@@ -84,7 +107,7 @@ module Jeweler
       def name_in_params
         self.class.instance_variable_get(:@name_in_params) || self.class.to_s.demodulize.underscore
       end
-      
+
     private
       def perform_request(&block)
         block.call
