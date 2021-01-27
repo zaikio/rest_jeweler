@@ -5,10 +5,11 @@ module Jeweler
     attr_reader :token, :host, :base_uri, :timeout
 
     def initialize(options = {})
-      @host     = options[:host]
-      @base_uri = options[:base_uri] || '/api/v1/'
-      @token    = options[:token]
-      @timeout  = options[:timeout] || 5
+      @host         = options[:host]
+      @base_uri     = options[:base_uri] || '/api/v1/'
+      @token        = options[:token]
+      @timeout      = options[:timeout] || 5
+      @open_timeout = options[:open_timeout] || 2
     end
 
     def perform_request(method, url, options = {})
@@ -33,6 +34,7 @@ private
       return connection.send(method) do |request|
         set_headers(request)
         request.options.timeout = @timeout
+        request.options.open_timeout = @open_timeout
         request.url(request_url)
         request.body = options[:payload] if options.has_key?(:payload)
       end

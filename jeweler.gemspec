@@ -7,7 +7,7 @@ Gem::Specification.new do |spec|
   spec.name          = "rest_jeweler"
   spec.version       = Jeweler::VERSION
   spec.authors       = ["Christian Weyer"]
-  spec.email         = ["cw@crispymtn.com"]
+  spec.email         = ["cw@zaikio.com"]
 
   spec.summary       = 'A foundation for REST API consumption gems'
   spec.description   = 'REST jeweler is the foundation for quickly building gems that consume REST APIs'
