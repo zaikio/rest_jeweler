@@ -8,8 +8,8 @@ module Jeweler
       @host         = options[:host]
       @base_uri     = options[:base_uri] || '/api/v1/'
       @token        = options[:token]
-      @timeout      = options[:timeout] || 5
-      @open_timeout = options[:open_timeout] || 2
+      @timeout      = options[:timeout] || 60
+      @open_timeout = options[:open_timeout] || 60
     end
 
     def perform_request(method, url, options = {})
